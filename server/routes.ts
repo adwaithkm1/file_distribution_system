@@ -138,9 +138,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Increment download count
       await storage.incrementDownloadCount(id);
 
+      // Check if this is a direct download request
+      const isDirect = req.query.direct === 'true';
+      
       // Set headers for file download
       res.setHeader('Content-Type', 'application/octet-stream');
-      res.setHeader('Content-Disposition', `attachment; filename="${file.originalName}"`);
+      
+      // For direct downloads, use 'inline' to open directly in the browser
+      // For normal downloads, use 'attachment' to prompt download
+      const disposition = isDirect ? 'inline' : 'attachment';
+      res.setHeader('Content-Disposition', `${disposition}; filename="${file.originalName}"`);
+      
       res.setHeader('Content-Length', fileData.length);
       
       res.send(fileData);

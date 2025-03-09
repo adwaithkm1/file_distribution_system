@@ -1,10 +1,11 @@
 import { File } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Copy, Link, X } from "lucide-react";
 import { formatFileSize, formatDate } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface FileCardProps {
   file: File;
@@ -13,6 +14,10 @@ interface FileCardProps {
 
 export function FileCard({ file, onDownloadStart }: FileCardProps) {
   const { toast } = useToast();
+  const [showDirectLink, setShowDirectLink] = useState(false);
+  
+  // Generate direct download link
+  const directDownloadLink = `${window.location.origin}/api/files/${file.id}/download?direct=true`;
   
   // Get the appropriate icon based on file type
   const getFileIcon = () => {
@@ -103,6 +108,23 @@ export function FileCard({ file, onDownloadStart }: FileCardProps) {
       });
     }
   };
+  
+  // Copy direct download link to clipboard
+  const copyDirectLink = () => {
+    navigator.clipboard.writeText(directDownloadLink).then(() => {
+      toast({
+        title: "Link Copied",
+        description: "Direct download link copied to clipboard!",
+      });
+    }).catch(error => {
+      console.error("Failed to copy link:", error);
+      toast({
+        title: "Copy Failed",
+        description: "Could not copy link to clipboard.",
+        variant: "destructive",
+      });
+    });
+  };
 
   return (
     <Card className="overflow-hidden" data-file-type={file.type}>
@@ -121,19 +143,50 @@ export function FileCard({ file, onDownloadStart }: FileCardProps) {
         </div>
       </div>
       <div className="bg-gray-50 px-5 py-3">
-        <div className="flex items-center justify-between">
-          <div className="text-sm">
-            <span className="text-gray-500">Downloads: </span>
-            <span className="font-medium text-gray-900">{file.downloads}</span>
+        <div className="flex flex-col space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              <span className="text-gray-500">Downloads: </span>
+              <span className="font-medium text-gray-900">{file.downloads}</span>
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="inline-flex items-center"
+                onClick={copyDirectLink}
+              >
+                <Copy className="h-4 w-4 mr-1" />
+                Copy Link
+              </Button>
+              <Button 
+                size="sm" 
+                className="inline-flex items-center"
+                onClick={handleDownload}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Download
+              </Button>
+            </div>
           </div>
-          <Button 
-            size="sm" 
-            className="inline-flex items-center"
-            onClick={handleDownload}
-          >
-            <Download className="h-4 w-4 mr-1" />
-            Download
-          </Button>
+          
+          {showDirectLink && (
+            <div className="flex items-center p-2 bg-gray-100 rounded text-sm text-gray-800 break-all">
+              <code className="flex-1 overflow-x-auto">{directDownloadLink}</code>
+              <Button variant="ghost" size="sm" className="ml-2" onClick={() => setShowDirectLink(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          
+          <div className="text-center">
+            <button 
+              className="text-primary-600 hover:text-primary-800 text-xs"
+              onClick={() => setShowDirectLink(!showDirectLink)}
+            >
+              {showDirectLink ? 'Hide direct link' : 'Show direct link'}
+            </button>
+          </div>
         </div>
       </div>
     </Card>
