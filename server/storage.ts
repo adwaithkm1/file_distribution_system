@@ -46,8 +46,85 @@ export class MemStorage implements IStorage {
   private async initFileDir() {
     try {
       await fs.mkdir(this.fileDir, { recursive: true });
+      
+      // On startup, restore any backed up files from the backup location
+      await this.restoreFilesFromBackup();
     } catch (error) {
       console.error("Error creating uploads directory:", error);
+    }
+  }
+  
+  // Add backup functionality to persist files between deploys
+  private async backupFiles() {
+    try {
+      // Create backup directory if it doesn't exist
+      const backupDir = path.resolve(process.cwd(), "file_backups");
+      await fs.mkdir(backupDir, { recursive: true });
+      
+      // Create a backup manifest of all files
+      const manifest = Array.from(this.filesList.values());
+      await fs.writeFile(
+        path.join(backupDir, "manifest.json"), 
+        JSON.stringify(manifest, null, 2)
+      );
+      
+      // Copy all files to backup location
+      for (const file of manifest) {
+        try {
+          const fileData = await this.getFileData(file.name);
+          if (fileData) {
+            await fs.writeFile(path.join(backupDir, file.name), fileData);
+          }
+        } catch (err) {
+          console.error(`Error backing up file ${file.name}:`, err);
+        }
+      }
+      console.log(`Backed up ${manifest.length} files to ${backupDir}`);
+    } catch (error) {
+      console.error("Error backing up files:", error);
+    }
+  }
+  
+  private async restoreFilesFromBackup() {
+    try {
+      const backupDir = path.resolve(process.cwd(), "file_backups");
+      const manifestPath = path.join(backupDir, "manifest.json");
+      
+      // Check if backup exists
+      try {
+        await fs.access(manifestPath);
+      } catch {
+        console.log("No backup found, starting with empty storage");
+        return;
+      }
+      
+      // Read and parse manifest
+      const manifestData = await fs.readFile(manifestPath, 'utf8');
+      const manifest = JSON.parse(manifestData) as File[];
+      
+      // Restore files
+      let restoredCount = 0;
+      for (const file of manifest) {
+        try {
+          // Restore file metadata
+          this.filesList.set(file.id, file);
+          if (file.id >= this.fileCurrentId) {
+            this.fileCurrentId = file.id + 1;
+          }
+          
+          // Restore file data
+          const backupFilePath = path.join(backupDir, file.name);
+          const fileData = await fs.readFile(backupFilePath);
+          await fs.writeFile(path.join(this.fileDir, file.name), fileData);
+          restoredCount++;
+        } catch (err) {
+          console.error(`Error restoring file ${file.name}:`, err);
+        }
+      }
+      
+      console.log(`Restored ${restoredCount} files from backup`);
+    } catch (error) {
+      console.error("Error restoring files from backup:", error);
     }
   }
 
@@ -96,6 +173,10 @@ export class MemStorage implements IStorage {
     };
     
     this.filesList.set(id, file);
+    
+    // Backup files after adding a new file
+    await this.backupFiles();
+    
     return file;
   }
 
@@ -106,6 +187,10 @@ export class MemStorage implements IStorage {
     try {
       await this.deleteFileData(file.name);
       this.filesList.delete(id);
+      
+      // Backup files after removing a file
+      await this.backupFiles();
+      
       return true;
     } catch (error) {
       console.error("Error deleting file:", error);
@@ -119,6 +204,13 @@ export class MemStorage implements IStorage {
     
     const updatedFile = { ...file, downloads: file.downloads + 1 };
     this.filesList.set(id, updatedFile);
+    
+    // Backup files periodically after download count changes
+    // Only backup every 5 downloads to avoid excessive writes
+    if (updatedFile.downloads % 5 === 0) {
+      await this.backupFiles();
+    }
+    
     return updatedFile;
   }
 
