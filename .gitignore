@@ -26,7 +26,15 @@ npm-debug.log*
 Thumbs.db
 
 # Application specific
-# file_backups/ (uncommented to include in git)
+# Track directories but not their contents
+!file_backups/
+!uploads/
+file_backups/*
+uploads/*
+
+# But do track .gitkeep files to preserve directories
+!file_backups/.gitkeep
+!uploads/.gitkeep
 
 node_modules
 dist
