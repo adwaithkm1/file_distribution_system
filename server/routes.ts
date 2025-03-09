@@ -1,4 +1,5 @@
-import type { Express, Request, Response } from "express";
+import { type Express, Request, Response, NextFunction } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import multer from "multer";
@@ -6,6 +7,11 @@ import path from "path";
 import { insertFileSchema, FileTypeEnum } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
+
+// Define Multer Request type extension
+interface MulterRequest extends Request {
+  file?: Express.Multer.File;
+}
 
 // Configure multer for in-memory storage
 const upload = multer({
@@ -31,7 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload a file
-  apiRouter.post('/files', upload.single('file'), async (req: Request, res: Response) => {
+  apiRouter.post('/files', upload.single('file'), async (req: MulterRequest, res: Response) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
@@ -150,6 +156,3 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
-
-// Import express to use Router
-import express from "express";
