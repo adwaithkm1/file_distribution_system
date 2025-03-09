@@ -1,21 +1,29 @@
 
-# REST Express File Sharing Application
+# File Distribution System
 
-## Deployment on Render
+A web-based application for distributing and sharing files securely. This system allows administrators to upload executable files (.exe), batch files (.bat), and archives (.zip) that users can then download.
 
-This application can be deployed on Render using the following steps:
+## Features
 
-1. Create a new Web Service on Render
-2. Connect your repository
-3. Render will automatically detect the `render.yaml` configuration
-4. Set any environment variables needed (DATABASE_URL, etc.)
-5. Deploy
+- File upload with progress tracking
+- File browsing and filtering
+- Download tracking
+- Admin panel for file management
+- Automatic file backup system
+- User-friendly interface
 
-The application will use:
-- Build command: `npm install && npm run build`
-- Start command: `npm run start`
+## Technology Stack
 
-## Local Development
+- TypeScript
+- React with Vite
+- Express.js backend
+- TailwindCSS for styling
+- RESTful API design
+
+## Development
 
 Run `npm run dev` to start the development server.
-# file_distribution_system
+
+## Deployment
+
+The application can be deployed using Replit's deployment tools.
