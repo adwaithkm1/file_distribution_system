@@ -26,7 +26,6 @@ npm-debug.log*
 Thumbs.db
 
 # Application specific
-uploads/
 file_backups/
 
 node_modules
