@@ -158,6 +158,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Special endpoint to download the code ZIP file
+  apiRouter.get('/download-code', (req: Request, res: Response) => {
+    try {
+      const zipPath = '/home/runner/file_distribution_system.zip';
+      
+      if (!fs.existsSync(zipPath)) {
+        return res.status(404).json({ message: 'Code ZIP file not found' });
+      }
+      
+      // Set headers for file download
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', 'attachment; filename="file_distribution_system.zip"');
+      
+      // Create read stream and pipe to response
+      const fileStream = fs.createReadStream(zipPath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error('Error downloading code ZIP:', error);
+      res.status(500).json({ message: 'Failed to download code ZIP file' });
+    }
+  });
+
   // Mount API routes
   app.use('/api', apiRouter);
 
